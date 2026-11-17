@@ -44,6 +44,7 @@ public final class SelfTest {
 			testNetheriteTerrace(level);
 			testTillAndPlant(level);
 			testTillUnderGrass(level);
+			testBlacklist(level);
 			testEventOrder(level);
 		} catch (Throwable t) {
 			HoeFarm.LOGGER.error("SELFTEST упал", t);
@@ -169,6 +170,39 @@ public final class SelfTest {
 		}
 		HoeFarm.LOGGER.info("SELFTEST grass-till: result={} грядок={}/9 посажено={}/9 травы-осталось={} прочность={} инвентарь={}",
 				result, farmland, planted, leftovers, player.getMainHandItem().getDamageValue(), inventory(player));
+	}
+
+	/** Блэклист действует на всё поле: морковь из списка не собирается, хотя кликнули по пшенице. */
+	private static void testBlacklist(ServerLevel level) {
+		BlockPos c = ORIGIN.offset(60, 0, 40);
+		BlockState carrotRipe = Blocks.CARROTS.defaultBlockState().setValue(CropBlock.AGE, 7);
+		for (int dx = -1; dx <= 1; dx++) {
+			for (int dz = -1; dz <= 1; dz++) {
+				set(level, c.offset(dx, 0, dz), Blocks.FARMLAND.defaultBlockState());
+				set(level, c.offset(dx, 1, dz), dx == 0 && dz == 0 ? WHEAT_RIPE : carrotRipe);
+			}
+		}
+
+		ModConfig cfg = HoeFarm.config();
+		cfg.blacklist.add("minecraft:carrots");
+		try {
+			FakePlayer player = player(level, c.offset(0, 1, 0), Items.IRON_HOE, 64);
+			InteractionResult result = click(level, player, c.offset(0, 1, 0));
+
+			int carrotsLeft = 0;
+			int wheatReplanted = 0;
+			for (int dx = -1; dx <= 1; dx++) {
+				for (int dz = -1; dz <= 1; dz++) {
+					BlockState s = level.getBlockState(c.offset(dx, 1, dz));
+					if (s.is(Blocks.CARROTS) && s.getValue(CropBlock.AGE) == 7) carrotsLeft++;
+					if (s.is(Blocks.WHEAT) && s.getValue(CropBlock.AGE) == 0) wheatReplanted++;
+				}
+			}
+			HoeFarm.LOGGER.info("SELFTEST blacklist: result={} морковь-нетронута={}/8 пшеница-пересажена={}/1",
+					result, carrotsLeft, wheatReplanted);
+		} finally {
+			cfg.blacklist.remove("minecraft:carrots");
+		}
 	}
 
 	/** Кто первый в цепочке UseBlockCallback: мы или Right Click Harvest. 9 пересаженных = мы, 1 = они. */

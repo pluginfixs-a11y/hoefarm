@@ -140,6 +140,13 @@ public final class FarmAction {
 					BlockState state = level.getBlockState(pos);
 					Block block = state.getBlock();
 
+					// Блэклист проверяется для каждого блока поля, а не только для того,
+					// по которому кликнули: иначе культура из блэклиста рядом с пшеницей
+					// всё равно собиралась бы.
+					if (cfg.isBlacklisted(block)) {
+						continue;
+					}
+
 					if (block instanceof CropBlock crop) {
 						if (cfg.harvest && crop.isMaxAge(state) && harvest(level, pos, state, player, tool, cfg)) {
 							counts.harvested++;

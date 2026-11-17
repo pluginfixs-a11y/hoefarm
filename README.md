@@ -33,6 +33,9 @@ snow layers, fire. Crops, saplings and flowers are **not** replaceable, so they 
 
 It never tills under an existing crop, never touches immature crops, and never yanks a crop it cannot replant.
 
+`blacklist` (default: `minecraft:pitcher_crop`) is checked for **every** block in the area, not only for the block
+you clicked: a blacklisted crop standing next to wheat stays in the ground.
+
 ## Config
 
 `config/hoefarm.json`, read once at startup:
@@ -65,6 +68,7 @@ SELFTEST iron:        replanted=9/9  empty=0  durability=2
 SELFTEST netherite:   lower=20/20  terrace=5/5  durability=4
 SELFTEST till:        farmland=9/9  planted=9/9
 SELFTEST grass-till:  farmland=9/9  planted=9/9  grass left=0  durability=3
+SELFTEST blacklist:   carrots untouched=8/8  wheat replanted=1/1
 SELFTEST event-order: replanted=9/9 (9 = hoefarm ran first)
 ```
 
