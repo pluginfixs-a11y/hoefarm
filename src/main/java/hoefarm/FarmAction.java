@@ -77,6 +77,14 @@ public final class FarmAction {
 		}
 
 		BlockState originState = server.getBlockState(origin);
+
+		// Клик по траве, папоротнику или снегу на земле: спускаемся к блоку под растением
+		// (верхушка высокой травы — два шага вниз), иначе вспахать заросшее поле нельзя.
+		for (int i = 0; i < 2 && isClearablePlant(originState); i++) {
+			origin = origin.below();
+			originState = server.getBlockState(origin);
+		}
+
 		if (cfg.isBlacklisted(originState.getBlock()) || !isFarmTarget(originState)) {
 			return InteractionResult.PASS;
 		}
@@ -149,7 +157,7 @@ public final class FarmAction {
 						continue;
 					}
 
-					if (cfg.till && isTillable(state) && level.getBlockState(pos.above()).isAir()) {
+					if (cfg.till && isTillable(state) && clearAbove(level, pos, player)) {
 						till(level, pos, state);
 						counts.tilled++;
 						counts.changed++;
@@ -276,6 +284,28 @@ public final class FarmAction {
 		Block block = state.getBlock();
 		return block == Blocks.GRASS_BLOCK || block == Blocks.DIRT || block == Blocks.DIRT_PATH
 				|| block == Blocks.COARSE_DIRT || block == Blocks.ROOTED_DIRT;
+	}
+
+	/**
+	 * Декоративная мелочь, которую игра сама считает заменяемой: короткая и высокая трава, папоротники,
+	 * снежный слой, огонь. Культуры, саженцы и цветы сюда не попадают — их не трогаем.
+	 */
+	private static boolean isClearablePlant(BlockState state) {
+		return !state.isAir() && state.canBeReplaced() && state.getFluidState().isEmpty();
+	}
+
+	/** Над землёй пусто или стоит трава — траву сносим с дропом и пашем. */
+	private static boolean clearAbove(ServerLevel level, BlockPos pos, Player player) {
+		BlockPos above = pos.above();
+		BlockState aboveState = level.getBlockState(above);
+		if (aboveState.isAir()) {
+			return true;
+		}
+		if (!isClearablePlant(aboveState)) {
+			return false;
+		}
+		level.destroyBlock(above, true, player);
+		return true;
 	}
 
 	/** Ванильная карта HoeItem.TILLABLES: трава/дёрн/грубая земля → грядка, грубая/корневая → земля. */

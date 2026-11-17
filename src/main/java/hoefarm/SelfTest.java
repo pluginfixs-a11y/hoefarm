@@ -11,8 +11,10 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CropBlock;
+import net.minecraft.world.level.block.DoublePlantBlock;
 import net.minecraft.world.level.block.FarmlandBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 
@@ -24,6 +26,10 @@ import net.minecraft.world.phys.Vec3;
 public final class SelfTest {
 	private static final BlockPos ORIGIN = new BlockPos(1000, 200, 1000);
 	private static final BlockState WHEAT_RIPE = Blocks.WHEAT.defaultBlockState().setValue(CropBlock.AGE, 7);
+	private static final BlockState TALL_GRASS_LOWER =
+			Blocks.TALL_GRASS.defaultBlockState().setValue(DoublePlantBlock.HALF, DoubleBlockHalf.LOWER);
+	private static final BlockState TALL_GRASS_UPPER =
+			Blocks.TALL_GRASS.defaultBlockState().setValue(DoublePlantBlock.HALF, DoubleBlockHalf.UPPER);
 
 	private SelfTest() {
 	}
@@ -37,6 +43,7 @@ public final class SelfTest {
 			testIron(level);
 			testNetheriteTerrace(level);
 			testTillAndPlant(level);
+			testTillUnderGrass(level);
 			testEventOrder(level);
 		} catch (Throwable t) {
 			HoeFarm.LOGGER.error("SELFTEST упал", t);
@@ -127,6 +134,41 @@ public final class SelfTest {
 		}
 		HoeFarm.LOGGER.info("SELFTEST till: result={} грядок={}/9 посажено={}/9 инвентарь={}",
 				result, farmland, planted, inventory(player));
+	}
+
+	/** Заросшее поле: трава и высокая трава сносятся, клик — по самому растению (верхушке высокой травы). */
+	private static void testTillUnderGrass(ServerLevel level) {
+		BlockPos c = ORIGIN.offset(60, 0, 0);
+		for (int dx = -1; dx <= 1; dx++) {
+			for (int dz = -1; dz <= 1; dz++) {
+				set(level, c.offset(dx, 0, dz), Blocks.GRASS_BLOCK.defaultBlockState());
+				if (dz == 0) {
+					set(level, c.offset(dx, 1, dz), TALL_GRASS_LOWER);
+					set(level, c.offset(dx, 2, dz), TALL_GRASS_UPPER);
+				} else {
+					set(level, c.offset(dx, 1, dz), Blocks.SHORT_GRASS.defaultBlockState());
+				}
+			}
+		}
+
+		FakePlayer player = player(level, c.offset(0, 1, 0), Items.IRON_HOE, 64);
+		InteractionResult result = click(level, player, c.offset(0, 2, 0));
+
+		int farmland = 0;
+		int planted = 0;
+		int leftovers = 0;
+		for (int dx = -1; dx <= 1; dx++) {
+			for (int dz = -1; dz <= 1; dz++) {
+				if (level.getBlockState(c.offset(dx, 0, dz)).getBlock() instanceof FarmlandBlock) farmland++;
+				if (level.getBlockState(c.offset(dx, 1, dz)).is(Blocks.WHEAT)) planted++;
+				for (int dy = 1; dy <= 2; dy++) {
+					BlockState s = level.getBlockState(c.offset(dx, dy, dz));
+					if (s.is(Blocks.SHORT_GRASS) || s.is(Blocks.TALL_GRASS)) leftovers++;
+				}
+			}
+		}
+		HoeFarm.LOGGER.info("SELFTEST grass-till: result={} грядок={}/9 посажено={}/9 травы-осталось={} прочность={} инвентарь={}",
+				result, farmland, planted, leftovers, player.getMainHandItem().getDamageValue(), inventory(player));
 	}
 
 	/** Кто первый в цепочке UseBlockCallback: мы или Right Click Harvest. 9 пересаженных = мы, 1 = они. */
