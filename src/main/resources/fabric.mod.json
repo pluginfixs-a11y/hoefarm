@@ -1,0 +1,25 @@
+{
+	"schemaVersion": 1,
+	"id": "hoefarm",
+	"version": "${version}",
+	"name": "HoeFarm",
+	"description": "Мотыга собирает, пересаживает и вспахивает поле по тиру: железо 3x3, алмаз 3x3x3, незерит 5x5x3.",
+	"authors": [
+		"deaefer"
+	],
+	"license": "MIT",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"hoefarm.HoeFarm"
+		]
+	},
+	"mixins": [
+		"hoefarm.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.20.1",
+		"minecraft": "${minecraft_dep}",
+		"java": ">=25"
+	}
+}

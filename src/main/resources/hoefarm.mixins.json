@@ -1,0 +1,11 @@
+{
+	"required": true,
+	"package": "hoefarm.mixin",
+	"compatibilityLevel": "JAVA_25",
+	"mixins": [
+		"CropBlockAccessor"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}
