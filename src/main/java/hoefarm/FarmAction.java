@@ -110,7 +110,10 @@ public final class FarmAction {
 		int perPoint = Math.max(1, cfg.durability_per_blocks);
 		tool.hurtAndBreak(Math.max(1, (counts.changed + perPoint - 1) / perPoint), player, EquipmentSlot.MAINHAND);
 		player.causeFoodExhaustion((float) (cfg.hunger_per_block * counts.changed));
-		player.awardStat(Stats.ITEM_USED.get(tool.getItem()));
+		if (!tool.isEmpty()) {
+			// пустой рукой (bare_hand_harvest) статистики «использовал предмет» быть не должно
+			player.awardStat(Stats.ITEM_USED.get(tool.getItem()));
+		}
 
 		if (counts.tilled > 0) {
 			server.playSound(null, origin, SoundEvents.HOE_TILL, SoundSource.BLOCKS, 1.0F, 1.0F);
